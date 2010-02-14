@@ -4,6 +4,8 @@
 #include "mmu.h"
 #include "proc.h"
 
+extern unsigned int fastrand(unsigned int s);
+
 int
 sys_fork(void)
 {
@@ -77,4 +79,46 @@ sys_sleep(void)
   }
   release(&tickslock);
   return 0;
+}
+
+int
+sys_gettic(void)
+{
+  // Enter Special Code Here !
+  int n, ticks0;
+  
+  if(argint(0, &n) < 0)
+    return -1;
+  acquire(&tickslock);
+  ticks0 = ticks;
+  release(&tickslock);
+
+  return ticks0;
+
+}
+
+// Set the ticknum to n
+// if n == 0, return numtics.
+// return 0 on success
+int
+sys_settn(int n)
+{
+
+  if (n == 0) 
+    return cp->tctcnt;
+  cp->tctcnt = n;
+  return 0;
+
+}
+
+extern int sys_write(int, const char *, int);
+
+unsigned int
+sys_rand(void)
+{
+
+    int k = fastrand(ticks);
+    // sys_write(1, "Done with fr", 13);
+    return k;
+
 }

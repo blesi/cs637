@@ -41,6 +41,7 @@ struct proc {
   struct context context;   // Switch here to run process
   struct trapframe *tf;     // Trap frame for current interrupt
   char name[16];            // Process name (debugging)
+  int tctcnt;               // Total Ticket Count Assigned to this process
 };
 
 // Process memory is laid out contiguously, low addresses first:

@@ -19,3 +19,6 @@
 #define SYS_getpid 18
 #define SYS_sbrk   19
 #define SYS_sleep  20
+#define SYS_gettic 21
+#define SYS_settn  22
+#define SYS_rand   23

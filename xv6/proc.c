@@ -14,6 +14,9 @@ static struct proc *initproc;
 int nextpid = 1;
 extern void forkret(void);
 extern void forkret1(struct trapframe*);
+extern unsigned int fastrand(unsigned int s);
+unsigned int ttltcts = 0; 
+
 
 void
 pinit(void)
@@ -36,6 +39,8 @@ allocproc(void)
     if(p->state == UNUSED){
       p->state = EMBRYO;
       p->pid = nextpid++;
+      p->tctcnt = 100;
+      ttltcts += 100;
       release(&proc_table_lock);
       return p;
     }
@@ -134,6 +139,10 @@ copyproc(struct proc *p)
       if(p->ofile[i])
         np->ofile[i] = filedup(p->ofile[i]);
     np->cwd = idup(p->cwd);
+
+    // Copy ticket count of parent to child
+    // np->tctcnt = p->tctcnt;
+
   }
 
   // Set up new context to start executing at forkret (see below).
@@ -203,6 +212,10 @@ scheduler(void)
   struct proc *p;
   struct cpu *c;
   int i;
+  unsigned int random;
+  unsigned int curtct;
+  unsigned int nxttct;
+
 
   c = &cpus[cpu()];
   for(;;){
@@ -211,8 +224,23 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);
+
+    // random = 0 to ttltcts
+    random = fastrand(ticks) % ttltcts;
+    curtct = 0;
+    // nxttct = 0;
+
+
     for(i = 0; i < NPROC; i++){
       p = &proc[i];
+      nxttct = curtct + p->tctcnt;
+      if (!(random >= curtct && random < nxttct)) {
+          curtct = nxttct;
+          continue;
+      }
+
+      i = NPROC; // start looping processes from begining
+
       if(p->state != RUNNABLE)
         continue;
 
