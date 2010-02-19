@@ -167,7 +167,7 @@ copythread(struct proc *p, char *usrstck)
   // Allocate process.
   if((np = allocproc()) == 0)
     return 0;
-  
+
   // Allocate kernel stack.
   if((np->kstack = kalloc(KSTACKSIZE)) == 0){
     np->state = UNUSED;
@@ -175,14 +175,13 @@ copythread(struct proc *p, char *usrstck)
   }
   np->tf = (struct trapframe*)(np->kstack + KSTACKSIZE) - 1;
 
-
   if(p){  // Copy process state from p.
     np->parent = p;
     memmove(np->tf, p->tf, sizeof(*np->tf));
   
     np->sz = p->sz;
- 
-    /*   
+    np->mem = p->mem;
+    /*
     if((np->mem = kalloc(np->sz)) == 0){
       kfree(np->kstack, KSTACKSIZE);
       np->kstack = 0;
@@ -190,31 +189,22 @@ copythread(struct proc *p, char *usrstck)
       np->parent = 0;
       return 0;
     }
-    
     memmove(np->mem, p->mem, np->sz);
     */
-    np->mem = p->mem;
-    
-    // Create and add own stack.
-    // np->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-    // np->tf->ds = (SEG_UDATA << 3) | DPL_USER;
-    // np->tf->es = p->tf->ds;
-    //memmove(usrstck, np->mem + (np->sz - np->tf->ss), np->tf->ss);
-        // np->tf->eflags = FL_IF;
-    np->tf->ss = usrstck;
-    np->tf->esp = usrstck + KSTACKSIZE - 1;
 
-
+    /*
     for(i = 0; i < NOFILE; i++)
       if(p->ofile[i])
         np->ofile[i] = filedup(p->ofile[i]);
     np->cwd = idup(p->cwd);
-/*  
-    for(i = 0; i < NOFILE; i++)
+    */
+
+    for(i = 0; i < NOFILE; i++) 
       if(p->ofile[i])
         np->ofile[i] = p->ofile[i];
+      
     np->cwd = p->cwd;
-*/
+
     // Copy ticket count of parent to child
     // np->tctcnt = p->tctcnt;
 
@@ -224,6 +214,11 @@ copythread(struct proc *p, char *usrstck)
   memset(&np->context, 0, sizeof(np->context));
   np->context.eip = (uint)forkret;
   np->context.esp = (uint)np->tf;
+
+  // set new thread to point to new stack.
+  np->tf->ebp = usrstck + 1008;
+  np->tf->esp = usrstck + 1008;
+  
 
   // Clear %eax so that fork system call returns 0 in child.
   np->tf->eax = 0;
@@ -466,21 +461,28 @@ exit(void)
   struct proc *p;
   int fd;
 
+  int isThread = (cp->parent->mem == cp->mem);
+
   ttltcts -= cp->tctcnt;
 
   if(cp == initproc)
     panic("init exiting");
 
-  // Close all open files.
-  for(fd = 0; fd < NOFILE; fd++){
-    if(cp->ofile[fd]){
-      fileclose(cp->ofile[fd]);
-      cp->ofile[fd] = 0;
-    }
-  }
 
-  iput(cp->cwd);
-  cp->cwd = 0;
+  if (!isThread) {
+      // Close all open files.
+      for(fd = 0; fd < NOFILE; fd++){
+          if(cp->ofile[fd]){
+              fileclose(cp->ofile[fd]);
+              cp->ofile[fd] = 0;
+          }
+      }
+
+
+    iput(cp->cwd);
+    cp->cwd = 0;
+
+  }
 
   acquire(&proc_table_lock);
 
@@ -522,7 +524,9 @@ wait(void)
       if(p->parent == cp){
         if(p->state == ZOMBIE){
           // Found one.
-          kfree(p->mem, p->sz);
+            if (cp->mem != p->mem) {
+                kfree(p->mem, p->sz);
+            }
           kfree(p->kstack, KSTACKSIZE);
           pid = p->pid;
           p->state = UNUSED;

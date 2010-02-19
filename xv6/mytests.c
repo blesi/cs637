@@ -13,9 +13,9 @@ int
 main() 
 {
 
-    int test = 3;
+    int test = 4;
 
-    int numThreads = 1;
+    int numThreads = 3;
     int fnshdtt;
     volatile int *x = malloc(sizeof(int));
     int i = 1;
@@ -43,7 +43,8 @@ main()
 
             for(currentrunT = 0; currentrunT < 100000; currentrunT++) {
               if (gettic() % 100 == 0) { 
-                printf(1, "time: %d  numticks: %d runcnt: %d\n", gettic(), settn(0), currentrunT);
+              // printf(1,"Time: %d, TicketNum %d, RunCnt: %d\n", gettic(), settn(0), currentrunT);
+              printf(1, "%d, %d, %d\n", gettic(), settn(0), currentrunT);
               }
 
             }
@@ -72,8 +73,10 @@ main()
       break;
     case 4:
 
+      numThreads = 1;
+
     //int mythreadid = thread_create(&increment, x);
-    while (i < numThreads) { 
+    while (i <= numThreads) { 
         
         int mythreadid = thread_create(&increment, x);
         
@@ -89,7 +92,7 @@ main()
     }
     // sleep(500);
 
-    while (i > 0) {
+    while (i > 1) {
     fnshdtt = twait();
     printf(1, "%dth finished thread: %d\n", numThreads - i + 1, fnshdtt);
     i--;
@@ -108,7 +111,7 @@ void
 increment(int *myX) 
 {
 
-    // printf(1, "hi\n");
+    printf(1, "hi\n");
     
   int i;
   for(i = 0; i < ITERATIONS; i++) {

@@ -134,8 +134,13 @@ sys_rand(void)
 }
 
 int
-sys_tfork(char *stck)
+sys_tfork(void)
 {
+
+  char *stck;
+  if (argptr(0, &stck, 1024) < 0) { 
+      return -2;
+  }
   int pid;
   struct proc *np;
 
