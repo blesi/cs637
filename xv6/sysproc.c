@@ -5,6 +5,7 @@
 #include "proc.h"
 
 extern unsigned int fastrand(unsigned int s);
+extern int sys_write(int, const char *, int);
 
 int
 sys_fork(void)
@@ -101,17 +102,26 @@ sys_gettic(void)
 // if n == 0, return numtics.
 // return 0 on success
 int
-sys_settn(int n)
+sys_settn()
 {
 
-  if (n == 0) 
-    return cp->tctcnt;
-  cp->tctcnt = n;
-  return 0;
+    int n; 
+    if( argint(0, &n) < 0 ) 
+        return -1;
+
+ if (n  == 0) {
+   return cp->tctcnt;
+ } else {
+
+    ttltcts = ttltcts - cp->tctcnt;
+    ttltcts = ttltcts + n;
+    cp->tctcnt = n;
+    return 0;
+ }
 
 }
 
-extern int sys_write(int, const char *, int);
+
 
 unsigned int
 sys_rand(void)
@@ -122,3 +132,23 @@ sys_rand(void)
     return k;
 
 }
+
+int
+sys_tfork(char *stck)
+{
+  int pid;
+  struct proc *np;
+
+  if((np = copythread(cp,stck)) == 0)
+    return -1;
+  pid = np->pid;
+  np->state = RUNNABLE;
+  return pid;
+}
+
+int
+sys_twait(void)
+{
+  return wait();
+}
+

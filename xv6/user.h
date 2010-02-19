@@ -21,10 +21,11 @@ int dup(int);
 int getpid();
 char* sbrk(int);
 int sleep(int);
-int gettic();
+int gettic(void);
 unsigned int settn(unsigned int s);
-int rand();
-
+int rand(void);
+int tfork(char*);
+int twait(void);
 // ulib.c
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);

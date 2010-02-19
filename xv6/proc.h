@@ -64,6 +64,7 @@ struct cpu {
 
 extern struct cpu cpus[NCPU];
 extern int ncpu;
+extern int ttltcts;
 
 // "cp" is a short alias for curproc().
 // It gets used enough to make this worthwhile.

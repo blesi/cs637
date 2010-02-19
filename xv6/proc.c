@@ -15,7 +15,7 @@ int nextpid = 1;
 extern void forkret(void);
 extern void forkret1(struct trapframe*);
 extern unsigned int fastrand(unsigned int s);
-unsigned int ttltcts = 0; 
+int ttltcts = 0; 
 
 
 void
@@ -140,6 +140,81 @@ copyproc(struct proc *p)
         np->ofile[i] = filedup(p->ofile[i]);
     np->cwd = idup(p->cwd);
 
+    // Copy ticket count of parent to child
+    // np->tctcnt = p->tctcnt;
+
+  }
+
+  // Set up new context to start executing at forkret (see below).
+  memset(&np->context, 0, sizeof(np->context));
+  np->context.eip = (uint)forkret;
+  np->context.esp = (uint)np->tf;
+
+  // Clear %eax so that fork system call returns 0 in child.
+  np->tf->eax = 0;
+  return np;
+}
+
+// Create a new thread copying p as the parent.
+// Sets up stack to return as if from system call. <- done in other fcn
+// Caller must set state of returned proc to RUNNABLE.
+struct proc*
+copythread(struct proc *p, char *usrstck)
+{
+  int i;
+  struct proc *np;
+
+  // Allocate process.
+  if((np = allocproc()) == 0)
+    return 0;
+  
+  // Allocate kernel stack.
+  if((np->kstack = kalloc(KSTACKSIZE)) == 0){
+    np->state = UNUSED;
+    return 0;
+  }
+  np->tf = (struct trapframe*)(np->kstack + KSTACKSIZE) - 1;
+
+
+  if(p){  // Copy process state from p.
+    np->parent = p;
+    memmove(np->tf, p->tf, sizeof(*np->tf));
+  
+    np->sz = p->sz;
+ 
+    /*   
+    if((np->mem = kalloc(np->sz)) == 0){
+      kfree(np->kstack, KSTACKSIZE);
+      np->kstack = 0;
+      np->state = UNUSED;
+      np->parent = 0;
+      return 0;
+    }
+    
+    memmove(np->mem, p->mem, np->sz);
+    */
+    np->mem = p->mem;
+    
+    // Create and add own stack.
+    // np->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+    // np->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+    // np->tf->es = p->tf->ds;
+    //memmove(usrstck, np->mem + (np->sz - np->tf->ss), np->tf->ss);
+        // np->tf->eflags = FL_IF;
+    np->tf->ss = usrstck;
+    np->tf->esp = usrstck + KSTACKSIZE - 1;
+
+
+    for(i = 0; i < NOFILE; i++)
+      if(p->ofile[i])
+        np->ofile[i] = filedup(p->ofile[i]);
+    np->cwd = idup(p->cwd);
+/*  
+    for(i = 0; i < NOFILE; i++)
+      if(p->ofile[i])
+        np->ofile[i] = p->ofile[i];
+    np->cwd = p->cwd;
+*/
     // Copy ticket count of parent to child
     // np->tctcnt = p->tctcnt;
 
@@ -390,6 +465,8 @@ exit(void)
 {
   struct proc *p;
   int fd;
+
+  ttltcts -= cp->tctcnt;
 
   if(cp == initproc)
     panic("init exiting");
