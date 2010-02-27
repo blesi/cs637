@@ -159,7 +159,7 @@ copyproc(struct proc *p)
 // Sets up stack to return as if from system call. <- done in other fcn
 // Caller must set state of returned proc to RUNNABLE.
 struct proc*
-copythread(struct proc *p, char *usrstck)
+copythread(struct proc *p, int usrstck, int routine, int args)
 {
   int i;
   struct proc *np;
@@ -192,19 +192,19 @@ copythread(struct proc *p, char *usrstck)
     memmove(np->mem, p->mem, np->sz);
     */
 
-    /*
+    
     for(i = 0; i < NOFILE; i++)
       if(p->ofile[i])
         np->ofile[i] = filedup(p->ofile[i]);
     np->cwd = idup(p->cwd);
-    */
-
+    
+    /*
     for(i = 0; i < NOFILE; i++) 
       if(p->ofile[i])
         np->ofile[i] = p->ofile[i];
       
     np->cwd = p->cwd;
-
+    */
     // Copy ticket count of parent to child
     // np->tctcnt = p->tctcnt;
 
@@ -215,13 +215,18 @@ copythread(struct proc *p, char *usrstck)
   np->context.eip = (uint)forkret;
   np->context.esp = (uint)np->tf;
 
-  // set new thread to point to new stack.
-  np->tf->ebp = usrstck + 1008;
-  np->tf->esp = usrstck + 1008;
-  
 
   // Clear %eax so that fork system call returns 0 in child.
   np->tf->eax = 0;
+
+
+  // set new thread to point to new stack.
+  // np->tf->ebp = usrstck + 1012;
+  np->tf->esp = usrstck + 1012;
+  
+  * (int *) (np->tf->esp + np->mem) = routine;
+  * (int *) (np->tf->esp + np->mem + 8) = args;
+
   return np;
 }
 
@@ -295,21 +300,28 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);
 
-    // random = 0 to ttltcts
+    // random = 0 to ttltcts simulating whose turn it is.
     random = fastrand(ticks) % ttltcts;
     curtct = 0;
     // nxttct = 0;
 
 
+    // iterate over all processes
     for(i = 0; i < NPROC; i++){
       p = &proc[i];
+      if(p->state == UNUSED || p->state == ZOMBIE) { 
+          continue;
+      }
+      // set up proc range.
       nxttct = curtct + p->tctcnt;
+      // not in our proc's range, check next range 
       if (!(random >= curtct && random < nxttct)) {
           curtct = nxttct;
           continue;
       }
 
-      i = NPROC; // start looping processes from begining
+      // desired proc found, don't loop through anymore.
+      i = NPROC; // start looping all processes from begining, but finish this loop.
 
       if(p->state != RUNNABLE)
         continue;

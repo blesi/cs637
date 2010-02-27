@@ -92,7 +92,7 @@ int             pipewrite(struct pipe*, char*, int);
 
 // proc.c
 struct proc*    copyproc(struct proc*);
-struct proc*    copythread(struct proc*, char*);
+struct proc*    copythread(struct proc*, int, int, int);
 struct proc*    curproc(void);
 void            exit(void);
 int             growproc(int);

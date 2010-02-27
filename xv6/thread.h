@@ -2,43 +2,96 @@
 #include "param.h"
     
 int thread_create(void *(*start_routine)(void*), void *arg);
+static inline uint xchg(volatile uint *addr, uint newval);
+
+
+// Lock Structures
+typedef struct mutex_t {
+    volatile uint locked;
+} mutex_t;
+
+// Condition Var Struct
+typedef struct cond_t {
+    char cond;
+} cond_t;
 
 
 int 
 thread_create(void *(*start_routine)(void*), void *arg) 
 {
 
-  void *stack = malloc(1024);
+  void *stack;
 
-  // Allocate kernel stack.
+  // Check stack.
   if((stack = malloc(1024)) == 0){
     return 0;
   }
 
-  // Set up stack to be able to call routine.
-  // *(stack + 1020) = (start_routine);
-  // *(stack + 1016) = arg;
+  int mpid; 
 
-  memmove(stack + 1016, (start_routine), sizeof((start_routine)));
-  memmove(stack + 1020, arg, sizeof(arg));
+  int *myX = (int *) arg;
 
-  int mpid = tfork(stack);
+  if ((mpid = tfork(stack, start_routine, arg)) < 0) {
 
-  if(mpid == 0) {
-      
-      // test
-      printf(1, "hia");
-      
-      // Execute passed routine
-      (*start_routine)(arg);
-      exit();
-
-  } else {
-
-      // Return pid of new thread
-      return mpid;
+      printf(1, "Error creating thread.\n");
+      return -1;
 
   }
 
+  return mpid;
+
 }
 
+
+// Mutual exclusion spin locks.
+
+void
+mutex_lock(mutex_t *m)
+{
+
+  while(xchg(&(m->locked), 1) == 1)
+    ;
+
+}
+
+
+// Release the lock.
+void
+mutex_unlock(mutex_t *m)
+{
+
+  xchg(&(m->locked), 0);
+
+}
+
+void 
+cond_wait(cond_t *c, mutex_t *m)
+{
+
+    // mutex_unlock(m);
+
+    // condwait(c, m);
+
+    // mutex_lock(m);
+
+}
+
+cond_signal(cond_t *c) 
+{
+
+    // condsig(c);
+
+}
+
+static inline uint
+xchg(volatile uint *addr, uint newval)
+{
+  uint result;
+  
+  // The + in "+m" denotes a read-modify-write operand.
+  asm volatile("lock; xchgl %0, %1" :
+               "+m" (*addr), "=a" (result) :
+               "1" (newval) :
+               "cc");
+  return result;
+}

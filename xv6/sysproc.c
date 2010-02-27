@@ -137,14 +137,18 @@ int
 sys_tfork(void)
 {
 
-  char *stck;
-  if (argptr(0, &stck, 1024) < 0) { 
-      return -2;
-  }
+  int stck;
+  int routine;
+  int args;
   int pid;
   struct proc *np;
 
-  if((np = copythread(cp,stck)) == 0)
+  if (argint(0, &stck) < 0 || argint(1, &routine) < 0 || 
+                                       argint(2, &args) < 0) { 
+      return -2;
+  }
+
+  if((np = copythread(cp, stck, routine, args)) == 0)
     return -1;
   pid = np->pid;
   np->state = RUNNABLE;

@@ -24,7 +24,7 @@ int sleep(int);
 int gettic(void);
 unsigned int settn(unsigned int s);
 int rand(void);
-int tfork(char*);
+int tfork(char*, void*, void*);
 int twait(void);
 // ulib.c
 int stat(char*, struct stat*);
