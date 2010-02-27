@@ -100,7 +100,9 @@ extern int sys_gettic(void);
 extern int sys_settn(void);
 extern int sys_rand(void);
 extern int sys_tfork(void);
-extern int sys_thread_wait(void);
+extern int sys_twait(void);
+extern int sys_cond_wat(void);
+extern int sys_cond_signal(void);
 
 static int (*syscalls[])(void) = {
 [SYS_chdir]   sys_chdir,
@@ -127,7 +129,9 @@ static int (*syscalls[])(void) = {
 [SYS_settn]   sys_settn,
 [SYS_rand]    sys_rand,
 [SYS_tfork]   sys_tfork,
-[SYS_thread_wait]   sys_thread_wait,
+[SYS_twait]   sys_twait,
+[SYS_cond_wat] sys_cond_wat,
+[SYS_cond_signal] sys_cond_signal,
 };
 
 void

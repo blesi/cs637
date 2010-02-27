@@ -207,6 +207,42 @@ copythread(struct proc *p, int usrstck, int routine, int args)
   return np;
 }
 
+void
+wake_on_cond(int cond_addr)
+{
+  int i;
+ 
+  struct proc *p;
+
+  acquire(&proc_table_lock);
+
+  for(p = proc; p < &proc[NPROC]; p++)
+    if(p->state == SLEEPING && p->mem == cp->mem && p->cond_addr == cond_addr)
+      p->state = RUNNABLE;
+
+  release(&proc_table_lock);
+
+}
+
+
+void
+sleep_on_cond(int cond_addr, int mutex_lock)
+{
+
+    acquire(&proc_table_lock);
+
+    cp->cond_addr = cond_addr;
+
+    cp->state = SLEEPING;  
+
+    *((int *) (cp->mem + mutex_lock)) = 0;
+
+    sched();
+
+    release(&proc_table_lock);
+
+}
+
 // Set up first user process.
 void
 userinit(void)

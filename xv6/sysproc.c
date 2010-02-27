@@ -123,10 +123,14 @@ sys_settn()
 
 
 
-unsigned long
+unsigned int
 sys_rand(void)
 {
-    return (ticks * 279470273UL) % 4294967291UL;
+
+    int k = fastrand(ticks);
+    // sys_write(1, "Done with fr", 13);
+    return k;
+
 }
 
 int
@@ -152,8 +156,38 @@ sys_tfork(void)
 }
 
 int
-sys_thread_wait(void)
+sys_twait(void)
 {
   return wait();
 }
 
+int
+sys_cond_wat(void)
+{ 
+  int cond_addr;
+  int mutex_lock;
+  if (argint(0, &cond_addr) < 0) 
+      return -1;
+  if (argint(1, &mutex_lock) < 0)
+      return -1;
+  
+  sleep_on_cond(cond_addr, mutex_lock);
+  
+  return 0;
+
+
+
+}
+
+
+int 
+sys_cond_signal(void)
+{
+  int cond_addr;
+  if (argint(0, &cond_addr) < 0) 
+      return -1;
+
+  wake_on_cond(cond_addr);
+  
+  return 0;
+}

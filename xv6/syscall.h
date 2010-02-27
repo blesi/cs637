@@ -24,3 +24,5 @@
 #define SYS_rand   23
 #define SYS_tfork  24
 #define SYS_thread_wait  25
+#define SYS_cond_wat 26
+#define SYS_cond_signal 27

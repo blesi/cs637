@@ -11,7 +11,7 @@ typedef struct mutex_t {
 
 // Condition Var Struct
 typedef struct cond_t {
-    char cond;
+    char cond; // using address as uid
 } cond_t;
 
 int thread_wait(void);
@@ -71,12 +71,14 @@ cond_wait(cond_t *c, mutex_t *m)
 
 }
 
+/***** See sys call *****
 cond_signal(cond_t *c) 
 {
 
     // condsig(c);
 
 }
+*/
 
 static inline uint
 xchg(volatile uint *addr, uint newval)
