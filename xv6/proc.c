@@ -181,33 +181,11 @@ copythread(struct proc *p, int usrstck, int routine, int args)
   
     np->sz = p->sz;
     np->mem = p->mem;
-    /*
-    if((np->mem = kalloc(np->sz)) == 0){
-      kfree(np->kstack, KSTACKSIZE);
-      np->kstack = 0;
-      np->state = UNUSED;
-      np->parent = 0;
-      return 0;
-    }
-    memmove(np->mem, p->mem, np->sz);
-    */
-
     
     for(i = 0; i < NOFILE; i++)
       if(p->ofile[i])
-        np->ofile[i] = filedup(p->ofile[i]);
-    np->cwd = idup(p->cwd);
-    
-    /*
-    for(i = 0; i < NOFILE; i++) 
-      if(p->ofile[i])
         np->ofile[i] = p->ofile[i];
-      
     np->cwd = p->cwd;
-    */
-    // Copy ticket count of parent to child
-    // np->tctcnt = p->tctcnt;
-
   }
 
   // Set up new context to start executing at forkret (see below).
@@ -218,7 +196,6 @@ copythread(struct proc *p, int usrstck, int routine, int args)
 
   // Clear %eax so that fork system call returns 0 in child.
   np->tf->eax = 0;
-
 
   // set new thread to point to new stack.
   // np->tf->ebp = usrstck + 1012;
@@ -274,6 +251,13 @@ curproc(void)
   return p;
 }
 
+
+unsigned long
+rand()
+{
+    return (ticks * 279470273UL) % 4294967291UL;
+}
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -282,7 +266,7 @@ curproc(void)
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
 void
-scheduler(void)
+lottery_scheduler(void)
 {
   struct proc *p;
   struct cpu *c;
@@ -301,7 +285,7 @@ scheduler(void)
     acquire(&proc_table_lock);
 
     // random = 0 to ttltcts simulating whose turn it is.
-    random = fastrand(ticks) % ttltcts;
+    random = rand() % ttltcts;
     curtct = 0;
     // nxttct = 0;
 
@@ -323,6 +307,51 @@ scheduler(void)
       // desired proc found, don't loop through anymore.
       i = NPROC; // start looping all processes from begining, but finish this loop.
 
+      if(p->state != RUNNABLE)
+        continue;
+
+      // Switch to chosen process.  It is the process's job
+      // to release proc_table_lock and then reacquire it
+      // before jumping back to us.
+      c->curproc = p;
+      setupsegs(p);
+      p->state = RUNNING;
+      swtch(&c->context, &p->context);
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->curproc = 0;
+      setupsegs(0);
+    }
+    release(&proc_table_lock);
+
+  }
+}
+
+
+// Per-CPU process scheduler.
+// Each CPU calls scheduler() after setting itself up.
+// Scheduler never returns.  It loops, doing:
+//  - choose a process to run
+//  - swtch to start running that process
+//  - eventually that process transfers control
+//      via swtch back to the scheduler.
+void
+rr_scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c;
+  int i;
+
+  c = &cpus[cpu()];
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    // Loop over process table looking for process to run.
+    acquire(&proc_table_lock);
+    for(i = 0; i < NPROC; i++){
+      p = &proc[i];
       if(p->state != RUNNABLE)
         continue;
 
@@ -578,7 +607,7 @@ procdump(void)
   [ZOMBIE]    "zombie"
   };
   int i, j;
-  struct proc *p;
+ struct proc *p;
   char *state;
   uint pc[10];
   

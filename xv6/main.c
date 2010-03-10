@@ -53,7 +53,7 @@ mpmain(void)
   xchg(&cpus[cpu()].booted, 1);
 
   cprintf("cpu%d: scheduling\n", cpu());
-  scheduler();
+  lottery_scheduler();
 }
 
 static void
@@ -83,4 +83,3 @@ bootothers(void)
       ;
   }
 }
-

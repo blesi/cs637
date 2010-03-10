@@ -23,4 +23,4 @@
 #define SYS_settn  22
 #define SYS_rand   23
 #define SYS_tfork  24
-#define SYS_twait  25
+#define SYS_thread_wait  25

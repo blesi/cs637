@@ -4,7 +4,6 @@
 int thread_create(void *(*start_routine)(void*), void *arg);
 static inline uint xchg(volatile uint *addr, uint newval);
 
-
 // Lock Structures
 typedef struct mutex_t {
     volatile uint locked;
@@ -15,21 +14,18 @@ typedef struct cond_t {
     char cond;
 } cond_t;
 
+int thread_wait(void);
 
 int 
 thread_create(void *(*start_routine)(void*), void *arg) 
 {
 
   void *stack;
-
+  int mpid;
   // Check stack.
   if((stack = malloc(1024)) == 0){
     return 0;
   }
-
-  int mpid; 
-
-  int *myX = (int *) arg;
 
   if ((mpid = tfork(stack, start_routine, arg)) < 0) {
 
@@ -39,7 +35,6 @@ thread_create(void *(*start_routine)(void*), void *arg)
   }
 
   return mpid;
-
 }
 
 

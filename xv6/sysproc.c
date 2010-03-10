@@ -123,14 +123,10 @@ sys_settn()
 
 
 
-unsigned int
+unsigned long
 sys_rand(void)
 {
-
-    int k = fastrand(ticks);
-    // sys_write(1, "Done with fr", 13);
-    return k;
-
+    return (ticks * 279470273UL) % 4294967291UL;
 }
 
 int
@@ -156,7 +152,7 @@ sys_tfork(void)
 }
 
 int
-sys_twait(void)
+sys_thread_wait(void)
 {
   return wait();
 }
