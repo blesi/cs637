@@ -15,6 +15,7 @@ int nextpid = 1;
 extern void forkret(void);
 extern void forkret1(struct trapframe*);
 extern unsigned int fastrand(unsigned int s);
+extern void sched(void);
 int ttltcts = 0; 
 
 
@@ -210,7 +211,6 @@ copythread(struct proc *p, int usrstck, int routine, int args)
 void
 wake_on_cond(int cond_addr)
 {
-  int i;
  
   struct proc *p;
 

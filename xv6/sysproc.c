@@ -156,7 +156,7 @@ sys_tfork(void)
 }
 
 int
-sys_twait(void)
+sys_thread_wait(void)
 {
   return wait();
 }

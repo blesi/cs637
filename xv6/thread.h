@@ -14,7 +14,7 @@ typedef struct cond_t {
     char cond; // using address as uid
 } cond_t;
 
-int thread_wait(void);
+// int thread_wait(void);
 
 int 
 thread_create(void *(*start_routine)(void*), void *arg) 

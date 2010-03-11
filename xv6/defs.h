@@ -107,7 +107,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-void            wake_on_cond(cond_addr);
+void            wake_on_cond(int);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
